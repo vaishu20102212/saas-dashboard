@@ -1,0 +1,13 @@
+.app {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #fff;
+}
+
+.main {
+  padding: 24px 28px;
+}
