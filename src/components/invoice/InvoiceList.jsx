@@ -13,7 +13,7 @@ import {
 export default function InvoiceList({ invoices, setInvoices, onAddNew, onEdit }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState(['#876213', '#876987', '#872345', '#878769']);
-  const [activeMenuId, setActiveMenuId] = useState('#876364'); // default open on first row matching screenshot 4
+  const [activeMenuId, setActiveMenuId] = useState(null);
 
   const filteredInvoices = invoices.filter(
     (inv) =>
@@ -45,9 +45,9 @@ export default function InvoiceList({ invoices, setInvoices, onAddNew, onEdit })
     );
   };
 
-  const handleDelete = (id, e) => {
+  const handleDelete = (invoice, e) => {
     e.stopPropagation();
-    setInvoices(invoices.filter((inv) => inv.id !== id));
+    setInvoices(invoices.filter((inv) => inv !== invoice));
     setActiveMenuId(null);
   };
 
@@ -127,8 +127,9 @@ export default function InvoiceList({ invoices, setInvoices, onAddNew, onEdit })
           </thead>
           <tbody className="divide-y divide-gray-50">
             {filteredInvoices.map((inv, index) => {
+              const rowKey = `${inv.id}-${index}`;
               const isChecked = selectedIds.includes(inv.id);
-              const isMenuOpen = activeMenuId === inv.id;
+              const isMenuOpen = activeMenuId === rowKey;
 
               return (
                 <tr
@@ -206,7 +207,7 @@ export default function InvoiceList({ invoices, setInvoices, onAddNew, onEdit })
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setActiveMenuId(isMenuOpen ? null : inv.id);
+                        setActiveMenuId(isMenuOpen ? null : rowKey);
                       }}
                       className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                     >
@@ -230,7 +231,7 @@ export default function InvoiceList({ invoices, setInvoices, onAddNew, onEdit })
                           <span>Edit</span>
                         </button>
                         <button
-                          onClick={(e) => handleDelete(inv.id, e)}
+                          onClick={(e) => handleDelete(inv, e)}
                           className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
                         >
                           <Trash2 size={12} className="text-red-500" />

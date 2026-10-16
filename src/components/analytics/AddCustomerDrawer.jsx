@@ -1,53 +1,59 @@
 import { useState } from 'react';
 import { Camera, X } from 'lucide-react';
 
-export default function AddCustomerDrawer({ isOpen, onClose, onAddCustomer }) {
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    gender: 'Male'
-  });
+const emptyForm = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  gender: 'Male'
+};
 
-  if (!isOpen) return null;
+export default function AddCustomerDrawer({ onClose, onSaveCustomer, customer }) {
+  const [formData, setFormData] = useState(() => {
+    if (!customer) return emptyForm;
+
+    const [firstName = '', ...lastNameParts] = customer.name.split(' ');
+    return {
+      firstName,
+      lastName: lastNameParts.join(' '),
+      email: customer.email || '',
+      phone: customer.phone || '',
+      gender: customer.gender || 'Male'
+    };
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (onAddCustomer) {
-      onAddCustomer({
+    const email = formData.email.trim();
+    const phone = formData.phone.trim();
+    const updatedCustomer = {
+      ...(customer || {
         id: Date.now(),
-        name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
         role: 'Client Member',
-        email: formData.email.trim(),
-        workEmail: formData.email.trim(),
-        phone: formData.phone.trim().startsWith('+')
-          ? formData.phone.trim()
-          : `+${formData.phone.trim()}`,
-        gender: formData.gender,
         location: 'New York, USA',
         avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80',
         performance: {
           monthly: [
-            { month: "Jan", val: 1.8 },
-            { month: "Feb", val: 2.2 },
-            { month: "Mar", val: 2.5 },
-            { month: "Apr", val: 2.8 },
-            { month: "May", val: 3.2 },
-            { month: "Jun", val: 3.5 }
+            { month: 'Jan', val: 1.8 },
+            { month: 'Feb', val: 2.2 },
+            { month: 'Mar', val: 2.5 },
+            { month: 'Apr', val: 2.8 },
+            { month: 'May', val: 3.2 },
+            { month: 'Jun', val: 3.5 }
           ],
           score1: 75,
           score2: 65
         }
-      });
-    }
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      gender: 'Male'
-    });
+      }),
+      name: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
+      email,
+      workEmail: email,
+      phone: phone.startsWith('+') ? phone : `+${phone}`,
+      gender: formData.gender
+    };
+
+    onSaveCustomer(updatedCustomer);
     onClose();
   };
 
@@ -64,7 +70,9 @@ export default function AddCustomerDrawer({ isOpen, onClose, onAddCustomer }) {
           <div>
             {/* Header */}
             <div className="flex items-center justify-between pb-6 border-b border-gray-100">
-              <h2 className="text-base font-bold text-[#1E1B3A]">Add Customer</h2>
+              <h2 className="text-base font-bold text-[#1E1B3A]">
+                {customer ? 'Edit Customer' : 'Add Customer'}
+              </h2>
               <button
                 onClick={onClose}
                 className="w-8 h-8 rounded-full bg-red-50 text-red-400 hover:text-red-600 flex items-center justify-center transition-colors"
@@ -162,7 +170,7 @@ export default function AddCustomerDrawer({ isOpen, onClose, onAddCustomer }) {
               form="add-customer-form"
               className="w-full py-3 px-4 bg-[#5B52F9] hover:bg-[#4d44e4] text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-200 transition-all active:scale-98"
             >
-              Add Customer
+            {customer ? 'Save Changes' : 'Add Customer'}
             </button>
           </div>
         </div>

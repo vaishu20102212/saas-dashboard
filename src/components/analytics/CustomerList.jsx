@@ -14,7 +14,8 @@ export default function CustomerList({
   setCustomers,
   selectedCustomerId,
   setSelectedCustomerId,
-  onOpenAddCustomer
+  onOpenAddCustomer,
+  onEditCustomer
 }) {
   const [menuOpenId, setMenuOpenId] = useState(null);
 
@@ -110,8 +111,8 @@ export default function CustomerList({
                         >
                           <button
                             onClick={() => {
-                              alert(`Edit customer: ${c.name}`);
                               setMenuOpenId(null);
+                              onEditCustomer(c);
                             }}
                             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
                           >

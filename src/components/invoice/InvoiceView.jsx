@@ -37,7 +37,7 @@ export default function InvoiceView() {
     if (editingInvoice) {
       setInvoices((currentInvoices) =>
         currentInvoices.map((currentInvoice) =>
-          currentInvoice.id === editingInvoice.id
+          currentInvoice === editingInvoice
             ? { ...currentInvoice, ...invoice }
             : currentInvoice
         )

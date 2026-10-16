@@ -12,6 +12,7 @@ export default function AnalyticsView() {
   const [endDate, setEndDate] = useState('2021-10-10');
   const [addProductOpen, setAddProductOpen] = useState(false);
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(null);
   const [products, setProducts] = useState(initialProductAnalytics.topProductsTable);
   const [customers, setCustomers] = useState(initialCustomers);
   const [selectedCustomerId, setSelectedCustomerId] = useState(1);
@@ -32,10 +33,29 @@ export default function AnalyticsView() {
     setAddProductOpen(false);
   };
 
-  const handleAddCustomer = (customer) => {
-    setCustomers((currentCustomers) => [customer, ...currentCustomers]);
+  const handleSaveCustomer = (customer) => {
+    if (editingCustomer) {
+      setCustomers((currentCustomers) =>
+        currentCustomers.map((currentCustomer) =>
+          currentCustomer.id === customer.id ? customer : currentCustomer
+        )
+      );
+    } else {
+      setCustomers((currentCustomers) => [customer, ...currentCustomers]);
+    }
     setSelectedCustomerId(customer.id);
+    setEditingCustomer(null);
     setAddCustomerOpen(false);
+  };
+
+  const handleOpenAddCustomer = () => {
+    setEditingCustomer(null);
+    setAddCustomerOpen(true);
+  };
+
+  const handleEditCustomer = (customer) => {
+    setEditingCustomer(customer);
+    setAddCustomerOpen(true);
   };
 
   const formatDate = (value) => {
@@ -126,7 +146,8 @@ export default function AnalyticsView() {
           setCustomers={setCustomers}
           selectedCustomerId={selectedCustomerId}
           setSelectedCustomerId={setSelectedCustomerId}
-          onOpenAddCustomer={() => setAddCustomerOpen(true)}
+          onOpenAddCustomer={handleOpenAddCustomer}
+          onEditCustomer={handleEditCustomer}
         />
       )}
 
@@ -137,11 +158,13 @@ export default function AnalyticsView() {
         onSaveProduct={handleAddProduct}
       />
 
-      <AddCustomerDrawer
-        isOpen={addCustomerOpen}
-        onClose={() => setAddCustomerOpen(false)}
-        onAddCustomer={handleAddCustomer}
-      />
+      {addCustomerOpen && (
+        <AddCustomerDrawer
+          onClose={() => setAddCustomerOpen(false)}
+          onSaveCustomer={handleSaveCustomer}
+          customer={editingCustomer}
+        />
+      )}
     </div>
   );
 }

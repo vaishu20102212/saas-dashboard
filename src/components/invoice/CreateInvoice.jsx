@@ -16,12 +16,6 @@ import {
 
 const createInvoiceId = () => `#${Math.floor(100000 + Math.random() * 900000)}`;
 
-const defaultSampleItems = [
-  { id: 1, name: 'ipod 2021', rate: 1000, qty: 10, amount: 10000 },
-  { id: 2, name: 'Apple Mackbook', rate: 1500, qty: 10, amount: 150000 },
-  { id: 3, name: 'iphone 12', rate: 885, qty: 10, amount: 8850 }
-];
-
 const formatDisplayDate = (dateVal) => {
   if (!dateVal) {
     return new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -46,14 +40,13 @@ const formatDisplayDate = (dateVal) => {
 };
 
 export default function CreateInvoice({ invoice, onSave }) {
-  const [invoiceId, setInvoiceId] = useState(() => invoice?.id || '#876370');
-  const [date, setDate] = useState(() => invoice?.date || '01/12/2021');
-  const [name, setName] = useState(() => invoice?.name || 'Alison G.');
-  const [email, setEmail] = useState(() => invoice?.email || 'Example@gmail.com');
-  const [address, setAddress] = useState(() => invoice?.address || 'Street');
+  const [invoiceId, setInvoiceId] = useState(() => invoice?.id || createInvoiceId());
+  const [date, setDate] = useState(() => invoice?.date || '');
+  const [name, setName] = useState(() => invoice?.name || '');
+  const [email, setEmail] = useState(() => invoice?.email || '');
+  const [address, setAddress] = useState(() => invoice?.address || '');
   const [items, setItems] = useState(() => {
-    if (invoice?.items && invoice.items.length > 0) return invoice.items;
-    return defaultSampleItems;
+    return invoice?.items || [];
   });
 
   const [formError, setFormError] = useState('');
@@ -72,32 +65,30 @@ export default function CreateInvoice({ invoice, onSave }) {
   const [newItemName, setNewItemName] = useState('');
   const [newItemRate, setNewItemRate] = useState('');
   const [newItemQty, setNewItemQty] = useState('');
+  const [isAddingItem, setIsAddingItem] = useState(false);
 
   const addItem = () => {
-    if (newItemName.trim()) {
-      const rate = Number(newItemRate) > 0 ? Number(newItemRate) : 100;
-      const qty = Number(newItemQty) > 0 ? Number(newItemQty) : 1;
-      const amount = rate * qty;
-      setItems((current) => [
-        ...current,
-        { id: Date.now(), name: newItemName.trim(), rate, qty, amount }
-      ]);
-      setNewItemName('');
-      setNewItemRate('');
-      setNewItemQty('');
-      setFormError('');
+    const rate = Number(newItemRate);
+    const qty = Number(newItemQty);
+    if (!newItemName.trim() || rate <= 0 || qty <= 0) {
+      setFormError('Enter a product name, a rate, and a quantity greater than zero.');
       return;
     }
 
-    const defaultProductNumber = items.length + 1;
-    const newItem = {
-      id: Date.now(),
-      name: `Product ${defaultProductNumber}`,
-      rate: 150,
-      qty: 1,
-      amount: 150
-    };
-    setItems((current) => [...current, newItem]);
+    setItems((current) => [
+      ...current,
+      {
+        id: Date.now(),
+        name: newItemName.trim(),
+        rate,
+        qty,
+        amount: rate * qty
+      }
+    ]);
+    setNewItemName('');
+    setNewItemRate('');
+    setNewItemQty('');
+    setIsAddingItem(false);
     setFormError('');
   };
 
@@ -127,12 +118,12 @@ export default function CreateInvoice({ invoice, onSave }) {
   };
 
   const buildInvoiceObject = (status = 'Pending') => {
-    const finalName = name.trim() || 'Alison G.';
-    const finalEmail = (recipientEmail || email).trim() || 'Example@gmail.com';
-    const finalAddress = address.trim() || 'Street';
+    const finalName = name.trim();
+    const finalEmail = (recipientEmail || email).trim();
+    const finalAddress = address.trim();
     const finalId = invoiceId.trim().startsWith('#') ? invoiceId.trim() : `#${invoiceId.trim()}`;
     const formattedDate = formatDisplayDate(date);
-    const finalItems = items.length > 0 ? items : defaultSampleItems;
+    const finalItems = items;
     const totalAmount = finalItems.reduce((sum, item) => sum + item.amount, 0);
 
     return {
@@ -149,12 +140,26 @@ export default function CreateInvoice({ invoice, onSave }) {
     };
   };
 
+  const validateInvoice = () => {
+    if (!date.trim() || !name.trim() || !email.trim() || (!invoice && !address.trim())) {
+      setFormError('Complete the invoice date and customer details before saving.');
+      return false;
+    }
+    if (!invoice && items.length === 0) {
+      setFormError('Add at least one product before saving the invoice.');
+      return false;
+    }
+    setFormError('');
+    return true;
+  };
+
   // Direct Form Submit (Create / Save Invoice)
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!validateInvoice()) return;
+
     const newInvoiceObj = buildInvoiceObject(invoice ? invoice.status : 'Pending');
     setShowSuccess(true);
-    setFormError('');
 
     setTimeout(() => {
       onSave?.(newInvoiceObj);
@@ -163,10 +168,11 @@ export default function CreateInvoice({ invoice, onSave }) {
 
   // Open Send Modal
   const handleOpenSendModal = () => {
-    setRecipientEmail(email || 'Example@gmail.com');
+    if (!validateInvoice()) return;
+    setRecipientEmail(email);
     setEmailSubject(`Invoice ${invoiceId} from Base Technologies`);
     setEmailMessage(
-      `Hello ${name || 'Alison'},\n\nPlease find attached invoice ${invoiceId} for $${total.toLocaleString()} USD.\n\nThank you for choosing Base Technologies!`
+      `Hello ${name || 'there'},\n\nPlease find attached invoice ${invoiceId} for $${total.toLocaleString()} USD.\n\nThank you for choosing Base Technologies!`
     );
     setIsSendModalOpen(true);
   };
@@ -312,12 +318,16 @@ export default function CreateInvoice({ invoice, onSave }) {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-[#1E1B3A]">Product Description</h3>
             <button
-              onClick={addItem}
+              onClick={() => {
+                setIsAddingItem((current) => !current);
+                setFormError('');
+              }}
               type="button"
               title="Add Product"
+              aria-label={isAddingItem ? 'Close add product form' : 'Add product'}
               className="w-7 h-7 rounded-full bg-[#5B52F9] text-white flex items-center justify-center hover:bg-[#4a42db] transition-colors shadow-xs cursor-pointer"
             >
-              <Plus size={16} />
+              {isAddingItem ? <X size={16} /> : <Plus size={16} />}
             </button>
           </div>
 
@@ -383,7 +393,7 @@ export default function CreateInvoice({ invoice, onSave }) {
             </table>
           </div>
 
-          {/* Inline quick add fields */}
+          {isAddingItem && (
           <div className="flex flex-col sm:flex-row items-center gap-2 mt-3 pt-3 border-t border-gray-100">
             <input
               type="text"
@@ -435,6 +445,7 @@ export default function CreateInvoice({ invoice, onSave }) {
               Add Item
             </button>
           </div>
+          )}
 
           {formError && (
             <p role="alert" className="mt-3 text-xs font-medium text-red-600">
