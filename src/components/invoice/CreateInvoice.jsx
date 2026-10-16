@@ -16,6 +16,24 @@ import {
 
 const createInvoiceId = () => `#${Math.floor(100000 + Math.random() * 900000)}`;
 
+const formatDateInputValue = (dateVal) => {
+  if (!dateVal) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateVal)) return dateVal;
+
+  const slashDate = dateVal.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (slashDate) {
+    const [, day, month, year] = slashDate;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  const parsed = new Date(dateVal);
+  if (Number.isNaN(parsed.getTime())) return '';
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const formatDisplayDate = (dateVal) => {
   if (!dateVal) {
     return new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -41,7 +59,7 @@ const formatDisplayDate = (dateVal) => {
 
 export default function CreateInvoice({ invoice, onSave }) {
   const [invoiceId, setInvoiceId] = useState(() => invoice?.id || createInvoiceId());
-  const [date, setDate] = useState(() => invoice?.date || '');
+  const [date, setDate] = useState(() => formatDateInputValue(invoice?.date));
   const [name, setName] = useState(() => invoice?.name || '');
   const [email, setEmail] = useState(() => invoice?.email || '');
   const [address, setAddress] = useState(() => invoice?.address || '');
@@ -119,10 +137,12 @@ export default function CreateInvoice({ invoice, onSave }) {
 
   const buildInvoiceObject = (status = 'Pending') => {
     const finalName = name.trim();
-    const finalEmail = (recipientEmail || email).trim();
+    const finalEmail = (recipientEmail || email || invoice?.email || '').trim();
     const finalAddress = address.trim();
     const finalId = invoiceId.trim().startsWith('#') ? invoiceId.trim() : `#${invoiceId.trim()}`;
-    const formattedDate = formatDisplayDate(date);
+    const formattedDate = date.trim()
+      ? formatDisplayDate(date)
+      : invoice?.date || '';
     const finalItems = items;
     const totalAmount = finalItems.reduce((sum, item) => sum + item.amount, 0);
 
@@ -141,11 +161,16 @@ export default function CreateInvoice({ invoice, onSave }) {
   };
 
   const validateInvoice = () => {
-    if (!date.trim() || !name.trim() || !email.trim() || (!invoice && !address.trim())) {
+    if (invoice) {
+      setFormError('');
+      return true;
+    }
+
+    if (!date.trim() || !name.trim() || !email.trim() || !address.trim()) {
       setFormError('Complete the invoice date and customer details before saving.');
       return false;
     }
-    if (!invoice && items.length === 0) {
+    if (items.length === 0) {
       setFormError('Add at least one product before saving the invoice.');
       return false;
     }
@@ -246,11 +271,11 @@ export default function CreateInvoice({ invoice, onSave }) {
             </label>
             <div className="relative">
               <input
-                type="text"
+                type="date"
+                aria-label="Invoice date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                placeholder="01/12/2021"
-                className="w-full pl-4 pr-10 py-2.5 rounded-xl bg-[#F8F9FD] border border-gray-200 text-xs text-[#1E1B3A] focus:outline-none focus:ring-2 focus:ring-[#5B52F9]/20"
+                className="w-full pl-4 pr-10 py-2.5 rounded-xl bg-[#F8F9FD] border border-gray-200 text-xs text-[#1E1B3A] focus:outline-none focus:ring-2 focus:ring-[#5B52F9]/20 cursor-pointer"
               />
               <Calendar
                 size={16}
@@ -527,7 +552,8 @@ export default function CreateInvoice({ invoice, onSave }) {
                 <span className="font-semibold text-[#1E1B3A]">INVOICE NO:</span> {invoiceId}
               </p>
               <p className="text-[11px] text-[#8E8EA1] mt-0.5">
-                <span className="font-semibold text-[#1E1B3A]">INVOICE DATE:</span> {date}
+                <span className="font-semibold text-[#1E1B3A]">INVOICE DATE:</span>{' '}
+                {date ? formatDisplayDate(date) : 'Select a date'}
               </p>
             </div>
           </div>
